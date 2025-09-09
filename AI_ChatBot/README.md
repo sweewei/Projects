@@ -1,11 +1,13 @@
-# 智能營養諮詢系統
-## 基於 RAG (Retrieval-Augmented Generation) 架構的智能營養諮詢對話系統，整合了 LLaMA 3.3 70B 模型與 FAISS 向量檢索，提供專業、準確的營養建議。
+# AI chatbot
 
-## 系統特色
-專業營養諮詢: 針對營養學專業知識進行優化 \
-RAG 架構: 結合文檔檢索與大語言模型生成 \
-即時對話: 支援流式打字效果，模擬真人對話 \
-智能 FAQ: 自動顯示常見問題，提升用戶體驗 \
-多語言支援: 自動語言檢測與中文翻譯 \
-安全可靠: 內建醫療免責聲明與安全性檢查 \
-性能評估: 完整的無參考評估系統
+An AI chatbot based on RAG (Retrieval-Augmented Generation) architecture, integrating LLaMA 3.3 70B model with FAISS vector retrieval to provide professional and accurate nutrition advice.
+
+## System Features
+
+- Professional Nutrition Consultation: Optimized for specialized nutrition knowledge \
+- RAG Architecture: Combines document retrieval with large language model generation \
+- Real-time Conversation: Supports streaming typing effects, simulating human-like dialogue \
+- Intelligent FAQ: Automatically displays frequently asked questions to enhance user experience \
+- Multi-language Support: Automatic language detection with Chinese translation \
+- Safe and Reliable: Built-in medical disclaimers and safety checks \
+- Performance Evaluation: Complete reference-free evaluation system
