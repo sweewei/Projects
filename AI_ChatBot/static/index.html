@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>智能營養諮詢系統</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #e0e0e0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+
+    #chat-container {
+      display: flex;
+      flex-direction: column;
+      width: min(90vw, 1000px);
+      max-width: 1000px;
+      min-width: 320px;
+      height: 100vh;
+      background: rgba(30, 30, 30, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      margin: 10px;
+    }
+
+    #chat-header {
+      text-align: center;
+      font-size: 22px;
+      font-weight: 600;
+      padding: 20px;
+      background: linear-gradient(135deg, #2c3e50, #3498db);
+      border-bottom: 1px solid #333;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    #status-indicator {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #27ae60;
+      box-shadow: 0 0 10px rgba(39, 174, 96, 0.5);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    #chat-box {
+      flex: 1;
+      background: rgba(30, 30, 30, 0.8);
+      padding: 20px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    #chat-box::-webkit-scrollbar {
+      display: none;
+    }
+
+    .message-row {
+      display: flex;
+      align-items: flex-end;
+      margin: 8px 0;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .message-row.user {
+      justify-content: flex-end;
+    }
+
+    .message-row.bot {
+      justify-content: flex-start;
+    }
+
+    .message {
+      padding: 15px 20px;
+      border-radius: 20px;
+      max-width: 75%;
+      line-height: 1.5em;
+      word-wrap: break-word;
+      position: relative;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      margin-bottom: 8px;
+    }
+
+    .user .message {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff;
+      margin-right: 10px;
+      border-bottom-right-radius: 5px;
+    }
+
+    .bot .message {
+      background: linear-gradient(135deg, #2c3e50, #34495e);
+      color: #ecf0f1;
+      margin-left: 10px;
+      border-bottom-left-radius: 5px;
+      border-left: 4px solid #3498db;
+    }
+
+    .message-timestamp {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.5);
+      margin-top: 4px;
+      line-height: 1.2;
+    }
+
+    .user .message-timestamp {
+      text-align: right;
+      margin-right: 10px;
+    }
+
+    .bot .message-timestamp {
+      text-align: left;
+      margin-left: 10px;
+    }
+
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      margin: 0 8px;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    .loading-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 15px 20px;
+    }
+
+    .loading-dots {
+      display: flex;
+      gap: 4px;
+    }
+
+    .loading-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #3498db;
+      animation: loadingPulse 1.4s ease-in-out infinite both;
+    }
+
+    .loading-dot:nth-child(1) { animation-delay: -0.32s; }
+    .loading-dot:nth-child(2) { animation-delay: -0.16s; }
+    .loading-dot:nth-child(3) { animation-delay: 0s; }
+
+    @keyframes loadingPulse {
+      0%, 80%, 100% {
+        transform: scale(0.8);
+        opacity: 0.5;
+      }
+      40% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    hr.divider {
+      border: none;
+      border-top: 2px solid rgba(255, 255, 255, 0.1);
+      margin: 30px 0 10px 0;
+      width: 100%;
+    }
+
+    .restart-label {
+      text-align: center;
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 14px;
+      margin-bottom: 20px;
+      font-style: italic;
+    }
+
+    #faq-container {
+      padding: 20px;
+      background: linear-gradient(135deg, rgba(52, 152, 219, 0.1), rgba(155, 89, 182, 0.1));
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      display: none;
+      animation: slideDown 0.4s ease-out;
+      backdrop-filter: blur(5px);
+    }
+
+    #faq-container.show {
+      display: block;
+    }
+
+    .faq-title {
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .faq-subtitle {
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 13px;
+      margin-bottom: 15px;
+      font-style: italic;
+    }
+
+    .faq-questions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .faq-btn {
+      padding: 15px 20px;
+      border: none;
+      border-radius: 15px;
+      background: linear-gradient(135deg, rgba(52, 152, 219, 0.8), rgba(46, 204, 113, 0.8));
+      color: white;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      text-align: left;
+      line-height: 1.4;
+      font-weight: 500;
+      backdrop-filter: blur(10px);
+    }
+
+    .faq-btn:hover {
+      background: linear-gradient(135deg, rgba(52, 152, 219, 1), rgba(46, 204, 113, 1));
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(52, 152, 219, 0.4);
+      border-color: rgba(255, 255, 255, 0.4);
+    }
+
+    .faq-btn::before {
+      content: "💬";
+      margin-right: 10px;
+      font-size: 16px;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    #input-area {
+      display: flex;
+      align-items: flex-end;
+      padding: 20px;
+      background: rgba(40, 40, 40, 0.9);
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      gap: 12px;
+    }
+
+    #user-input {
+      flex: 1;
+      padding: 15px 20px;
+      border-radius: 25px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      outline: none;
+      font-size: 16px;
+      background: rgba(60, 60, 60, 0.8);
+      color: #e0e0e0;
+      resize: none;
+      line-height: 1.5em;
+      min-height: 50px;
+      max-height: 120px;
+      transition: all 0.3s ease;
+    }
+
+    #user-input:focus {
+      border-color: #3498db;
+      box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+      background: rgba(70, 70, 70, 0.9);
+    }
+
+    #user-input::placeholder {
+      color: rgba(255, 255, 255, 0.4);
+    }
+
+    .btn {
+      padding: 15px 25px;
+      border: none;
+      border-radius: 25px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 120px;
+      justify-content: center;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    #send-btn {
+      background: linear-gradient(135deg, #27ae60, #2ecc71);
+      color: white;
+    }
+
+    #send-btn:hover:not(:disabled) {
+      background: linear-gradient(135deg, #2ecc71, #27ae60);
+    }
+
+    #clear-btn {
+      background: linear-gradient(135deg, #e74c3c, #c0392b);
+      color: white;
+    }
+
+    #clear-btn:hover:not(:disabled) {
+      background: linear-gradient(135deg, #ec7063, #e74c3c);
+    }
+
+    #stop-btn {
+      background: linear-gradient(135deg, #f39c12, #e67e22);
+      color: white;
+      display: none;
+    }
+
+    #stop-btn:hover:not(:disabled) {
+      background: linear-gradient(135deg, #f4d03f, #f39c12);
+    }
+
+    .error-message {
+      background: linear-gradient(135deg, #e74c3c, #c0392b);
+      color: white;
+      padding: 15px 20px;
+      border-radius: 15px;
+      margin: 10px 0;
+      border-left: 4px solid #fff;
+      animation: shake 0.5s ease-in-out;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+
+    /* 響應式設計 */
+    @media (max-width: 768px) {
+      #chat-container {
+        width: 100vw;
+        height: 100vh;
+        margin: 0;
+        border-radius: 0;
+      }
+
+      .message {
+        max-width: 85%;
+        padding: 12px 16px;
+      }
+
+      #input-area {
+        padding: 15px;
+        flex-wrap: wrap;
+      }
+
+      .btn {
+        min-width: 100px;
+        padding: 12px 20px;
+        font-size: 13px;
+      }
+
+      #user-input {
+        font-size: 16px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .faq-questions {
+        flex-direction: column;
+      }
+
+      .faq-btn {
+        width: 100%;
+        text-align: center;
+      }
+
+      #input-area {
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .btn {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="chat-container">
+    <!-- 頭部 -->
+    <div id="chat-header">
+      <i class="fas fa-robot"></i>
+      智能營養諮詢系統
+      <div id="status-indicator"></div>
+    </div>
+
+    <!-- 聊天區域 -->
+    <div id="chat-box"></div>
+
+    <!-- FAQ 區域 -->
+    <div id="faq-container">
+      <div class="faq-title">
+        <i class="fas fa-lightbulb"></i>
+        常見問題
+      </div>
+      <div class="faq-subtitle">選擇一個問題開始對話，或直接在下方輸入您的問題</div>
+      <div class="faq-questions" id="faq-questions"></div>
+    </div>
+
+    <!-- 輸入區域 -->
+    <div id="input-area">
+      <textarea 
+        id="user-input" 
+        rows="1" 
+        placeholder="請輸入您的營養問題...（Enter送出，Shift+Enter換行）"
+        maxlength="1000"
+      ></textarea>
+      
+      <button id="send-btn" class="btn" onclick="sendMessage()">
+        <i class="fas fa-paper-plane"></i>
+        送出
+      </button>
+      
+      <button id="clear-btn" class="btn" onclick="clearChat()">
+        <i class="fas fa-refresh"></i>
+        重新對話
+      </button>
+      
+      <button id="stop-btn" class="btn" onclick="stopOutput()">
+        <i class="fas fa-stop"></i>
+        停止
+      </button>
+    </div>
+  </div>
+
+  <script>
+    class ChatSystem {
+      constructor() {
+        this.elements = {
+          input: document.getElementById("user-input"),
+          sendBtn: document.getElementById("send-btn"),
+          clearBtn: document.getElementById("clear-btn"),
+          stopBtn: document.getElementById("stop-btn"),
+          chatBox: document.getElementById("chat-box"),
+          faqContainer: document.getElementById("faq-container"),
+          faqQuestions: document.getElementById("faq-questions"),
+          statusIndicator: document.getElementById("status-indicator")
+        };
+        
+        this.state = {
+          isTyping: false,
+          typingInterval: null,
+          fullReply: "",
+          chatHistory: 0,
+          lastInteractionTime: null
+        };
+        
+        this.config = {
+          apiBase: "http://127.0.0.1:8000",
+          typingSpeed: 30,
+          maxInputLength: 1000,
+          faqTimeout: 60000 // 60秒超時顯示FAQ
+        };
+        
+        this.faqTimer = null;
+        this.faqQuestions = [
+          "這個產品適合糖尿病患者使用嗎？",
+          "有哪些產品有助於腸胃健康？", 
+          "哪些產品比較適合孕婦食用？"
+        ];
+        
+        this.init();
+      }
+      
+      init() {
+        this.loadChatHistory();
+        this.setupEventListeners();
+        this.startHealthCheck();
+        
+        // 初始顯示FAQ（模擬初次對話）
+        setTimeout(() => {
+          this.showInitialFAQ();
+        }, 1000);
+      }
+      
+      setupEventListeners() {
+        // 輸入框事件
+        this.elements.input.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            this.sendMessage();
+          }
+        });
+        
+        // 自動調整輸入框高度
+        this.elements.input.addEventListener("input", () => {
+          this.autoResizeTextarea();
+          this.updateCharCount();
+          this.resetFAQTimer(); // 用戶活動時重設FAQ計時器
+        });
+        
+        // 用戶活動監聽（重設FAQ計時器）
+        ['click', 'keydown', 'mousemove'].forEach(event => {
+          document.addEventListener(event, () => this.resetFAQTimer());
+        });
+        
+        // 窗口關閉前保存
+        window.addEventListener("beforeunload", () => {
+          this.saveChatHistory();
+        });
+      }
+      
+      showInitialFAQ() {
+        // 檢查是否是初次對話或對話很少
+        const messageCount = this.elements.chatBox.children.length;
+        const hasUserMessages = this.elements.chatBox.querySelector('.message-row.user');
+        
+        if (messageCount < 3 || !hasUserMessages) {
+          this.renderFAQ(this.faqQuestions);
+          this.startFAQTimer();
+        }
+      }
+      
+      startFAQTimer() {
+        this.clearFAQTimer();
+        this.resetFAQTimer();
+      }
+      
+      resetFAQTimer() {
+        this.clearFAQTimer();
+        
+        // 如果FAQ已經顯示，不設定新計時器
+        if (this.elements.faqContainer.classList.contains('show')) {
+          return;
+        }
+        
+        // 設定新的超時計時器
+        this.faqTimer = setTimeout(() => {
+          if (!this.elements.faqContainer.classList.contains('show')) {
+            this.renderFAQ(this.faqQuestions);
+          }
+        }, this.config.faqTimeout);
+      }
+      
+      clearFAQTimer() {
+        if (this.faqTimer) {
+          clearTimeout(this.faqTimer);
+          this.faqTimer = null;
+        }
+      }
+      
+      autoResizeTextarea() {
+        const textarea = this.elements.input;
+        textarea.style.height = "auto";
+        textarea.style.height = Math.min(textarea.scrollHeight, 120) + "px";
+      }
+      
+      updateCharCount() {
+        const length = this.elements.input.value.length;
+        const maxLength = this.config.maxInputLength;
+        
+        if (length > maxLength * 0.9) {
+          this.elements.input.style.borderColor = length >= maxLength ? "#e74c3c" : "#f39c12";
+        } else {
+          this.elements.input.style.borderColor = "rgba(255, 255, 255, 0.1)";
+        }
+      }
+      
+      renderFAQ(questions) {
+        this.elements.faqQuestions.innerHTML = "";
+        
+        questions.forEach(question => {
+          const btn = document.createElement("button");
+          btn.className = "faq-btn";
+          btn.textContent = question;
+          btn.onclick = () => {
+            this.hideFAQ();
+            this.sendMessage(question);
+          };
+          this.elements.faqQuestions.appendChild(btn);
+        });
+        
+        this.elements.faqContainer.classList.add("show");
+      }
+      
+      hideFAQ() {
+        this.elements.faqContainer.classList.remove("show");
+        // 隱藏後重新開始計時
+        setTimeout(() => {
+          this.startFAQTimer();
+        }, 1000);
+      }
+      
+      async sendMessage(optionalMessage) {
+        const message = optionalMessage || this.elements.input.value.trim();
+        if (!message || this.state.isTyping) return;
+        
+        // 隱藏FAQ並清除計時器
+        this.hideFAQ();
+        this.clearFAQTimer();
+        
+        // 添加用戶消息（帶時間戳）
+        this.addMessage(message, "user");
+        this.elements.input.value = "";
+        this.elements.input.style.height = "auto";
+        
+        // 更新 UI 狀態
+        this.setTypingState(true);
+        
+        // 顯示載入動畫
+        const loadingMsg = this.addLoadingMessage();
+        
+        try {
+          const response = await fetch(`${this.config.apiBase}/chat`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message })
+          });
+          
+          if (!response.ok) {
+            throw new Error(`伺服器錯誤 (${response.status})`);
+          }
+          
+          const data = await response.json();
+          
+          // 移除載入動畫，開始打字效果
+          this.removeLoadingMessage(loadingMsg);
+          this.startTypingEffect(data.reply, data);
+          
+          this.updateConnectionStatus(true);
+          
+        } catch (error) {
+          console.error("發送訊息失敗:", error);
+          this.removeLoadingMessage(loadingMsg);
+          this.addErrorMessage(error.message);
+          this.setTypingState(false);
+          this.updateConnectionStatus(false);
+        }
+      }
+      
+      addMessage(content, role) {
+        const messageRow = document.createElement("div");
+        messageRow.className = `message-row ${role}`;
+        
+        const avatar = role === "user" 
+          ? "https://i.pravatar.cc/40?u=user" 
+          : "https://i.pravatar.cc/40?u=bot";
+        
+        const avatarImg = `<img src="${avatar}" class="avatar" alt="${role}">`;
+        const messageDiv = `<div class="message">${content}</div>`;
+        
+        // 添加時間戳
+        const now = new Date();
+        const timeString = this.formatTimestamp(now);
+        const timestampDiv = `<div class="message-timestamp">${timeString}</div>`;
+        
+        if (role === "user") {
+          messageRow.innerHTML = messageDiv + timestampDiv + avatarImg;
+        } else {
+          messageRow.innerHTML = avatarImg + messageDiv + timestampDiv;
+        }
+        
+        this.elements.chatBox.appendChild(messageRow);
+        this.scrollToBottom();
+        this.saveChatHistory();
+        
+        return messageRow;
+      }
+      
+      formatTimestamp(date) {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const messageDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        
+        // 格式化時間
+        const timeStr = date.toLocaleTimeString('zh-TW', { 
+          hour: '2-digit', 
+          minute: '2-digit',
+          hour12: false
+        });
+        
+        // 判斷日期
+        if (messageDate.getTime() === today.getTime()) {
+          return `今天\n${timeStr}`;
+        } else if (messageDate.getTime() === today.getTime() - 86400000) {
+          return `昨天\n${timeStr}`;
+        } else {
+          const dateStr = date.toLocaleDateString('zh-TW', {
+            month: '2-digit',
+            day: '2-digit'
+          });
+          return `${dateStr}\n${timeStr}`;
+        }
+      }
+      
+      addLoadingMessage() {
+        const messageRow = document.createElement("div");
+        messageRow.className = "message-row bot";
+        messageRow.innerHTML = `
+          <img src="https://i.pravatar.cc/40?u=bot" class="avatar" alt="bot">
+          <div class="message">
+            <div class="loading-container">
+              <div class="loading-dots">
+                <div class="loading-dot"></div>
+                <div class="loading-dot"></div>
+                <div class="loading-dot"></div>
+              </div>
+              <span style="margin-left: 8px; color: rgba(255,255,255,0.6);">思考中...</span>
+            </div>
+          </div>
+        `;
+        
+        this.elements.chatBox.appendChild(messageRow);
+        this.scrollToBottom();
+        
+        return messageRow;
+      }
+      
+      removeLoadingMessage(loadingMsg) {
+        if (loadingMsg && loadingMsg.parentNode) {
+          loadingMsg.parentNode.removeChild(loadingMsg);
+        }
+      }
+      
+      addErrorMessage(errorMsg) {
+        const messageRow = document.createElement("div");
+        messageRow.className = "message-row bot";
+        messageRow.innerHTML = `
+          <img src="https://i.pravatar.cc/40?u=bot" class="avatar" alt="bot">
+          <div class="message error-message">
+            <i class="fas fa-exclamation-triangle"></i>
+            抱歉，發生了錯誤：${errorMsg}
+          </div>
+        `;
+        
+        this.elements.chatBox.appendChild(messageRow);
+        this.scrollToBottom();
+        this.saveChatHistory();
+      }
+      
+      startTypingEffect(text, data) {
+        const botMsgRow = this.addMessage("", "bot");
+        const botMsgDiv = botMsgRow.querySelector(".message");
+        
+        this.state.fullReply = text;
+        let index = 0;
+        const speed = text.length > 500 ? 2 : 1;
+        
+        this.state.typingInterval = setInterval(() => {
+          if (index < text.length && this.state.isTyping) {
+            const chunk = text.slice(index, index + speed);
+            botMsgDiv.textContent += chunk;
+            index += speed;
+            this.scrollToBottom();
+            this.saveChatHistory();
+          } else {
+            this.finishTyping(botMsgDiv, data);
+          }
+        }, this.config.typingSpeed);
+      }
+      
+      finishTyping(msgDiv, data) {
+        clearInterval(this.state.typingInterval);
+        this.state.typingInterval = null;
+        msgDiv.textContent = this.state.fullReply;
+        this.setTypingState(false);
+        this.saveChatHistory();
+        
+        // 完成後重新開始FAQ計時
+        this.resetFAQTimer();
+      }
+      
+      stopOutput() {
+        if (this.state.typingInterval) {
+          // 立即停止打字效果
+          clearInterval(this.state.typingInterval);
+          this.state.typingInterval = null;
+          
+          // 獲取當前正在打字的消息
+          const lastBotMsg = this.elements.chatBox.querySelector(".message-row.bot:last-child .message");
+          if (lastBotMsg) {
+            // 保持當前內容，添加停止標記
+            const currentContent = lastBotMsg.textContent;
+            lastBotMsg.innerHTML = currentContent + '<span style="color: rgba(255,255,255,0.5); font-style: italic; margin-left: 8px;">[已停止]</span>';
+          }
+          
+          // 立即重設UI狀態
+          this.setTypingState(false);
+          this.saveChatHistory();
+          
+          // 停止後重新開始FAQ計時
+          this.resetFAQTimer();
+        }
+      }
+      
+      setTypingState(isTyping) {
+        this.state.isTyping = isTyping;
+        this.elements.input.disabled = isTyping;
+        
+        if (isTyping) {
+          this.elements.sendBtn.style.display = "none";
+          this.elements.clearBtn.style.display = "none";
+          this.elements.stopBtn.style.display = "flex";
+          
+          // 打字時暫停FAQ計時器
+          this.clearFAQTimer();
+        } else {
+          this.elements.sendBtn.style.display = "flex";
+          this.elements.clearBtn.style.display = "flex";
+          this.elements.stopBtn.style.display = "none";
+          this.elements.input.focus();
+        }
+      }
+      
+      async clearChat() {
+        const now = new Date();
+        const dateStr = now.toLocaleString("zh-TW");
+        
+        // 停止任何進行中的打字效果
+        if (this.state.typingInterval) {
+          clearInterval(this.state.typingInterval);
+          this.state.typingInterval = null;
+        }
+        
+        // 重設狀態
+        this.setTypingState(false);
+        
+        this.elements.chatBox.innerHTML += `
+          <hr class="divider">
+          <div class="restart-label">
+            <i class="fas fa-redo" style="margin-right: 8px;"></i>
+            重新對話 • ${dateStr}
+          </div>
+        `;
+        
+        this.scrollToBottom();
+        this.state.chatHistory = 0;
+        
+        // 清除所有計時器
+        this.clearFAQTimer();
+        
+        // 先隱藏FAQ
+        this.elements.faqContainer.classList.remove("show");
+        
+        try {
+          await fetch(`${this.config.apiBase}/reset`, { method: "POST" });
+          this.updateConnectionStatus(true);
+        } catch (error) {
+          console.error("重置失敗:", error);
+          this.updateConnectionStatus(false);
+        }
+        
+        // 強制顯示FAQ（重新對話後必須顯示）
+        setTimeout(() => {
+          this.renderFAQ(this.faqQuestions);
+          this.startFAQTimer();
+        }, 1000);
+      }
+      
+      scrollToBottom() {
+        this.elements.chatBox.scrollTop = this.elements.chatBox.scrollHeight;
+      }
+      
+      saveChatHistory() {
+        try {
+          localStorage.setItem("chatHistory", this.elements.chatBox.innerHTML);
+        } catch (error) {
+          console.warn("無法保存聊天記錄:", error);
+        }
+      }
+      
+      loadChatHistory() {
+        try {
+          const saved = localStorage.getItem("chatHistory");
+          if (saved) {
+            this.elements.chatBox.innerHTML = saved;
+            this.scrollToBottom();
+          }
+        } catch (error) {
+          console.warn("無法載入聊天記錄:", error);
+        }
+      }
+      
+      updateConnectionStatus(isConnected) {
+        const indicator = this.elements.statusIndicator;
+        if (isConnected) {
+          indicator.style.background = "#27ae60";
+          indicator.style.boxShadow = "0 0 10px rgba(39, 174, 96, 0.5)";
+        } else {
+          indicator.style.background = "#e74c3c";
+          indicator.style.boxShadow = "0 0 10px rgba(231, 76, 60, 0.5)";
+        }
+      }
+      
+      async startHealthCheck() {
+        const check = async () => {
+          try {
+            const response = await fetch(`${this.config.apiBase}/health`);
+            this.updateConnectionStatus(response.ok);
+          } catch {
+            this.updateConnectionStatus(false);
+          }
+        };
+        
+        check();
+        setInterval(check, 30000); // 30秒檢查一次
+      }
+    }
+    
+    // 全域函數（向後相容）
+    let chatSystem;
+    
+    window.onload = () => {
+      chatSystem = new ChatSystem();
+    };
+    
+    function sendMessage(message) {
+      chatSystem?.sendMessage(message);
+    }
+    
+    function clearChat() {
+      chatSystem?.clearChat();
+    }
+    
+    function stopOutput() {
+      chatSystem?.stopOutput();
+    }
+  </script>
+</body>
+</html>
