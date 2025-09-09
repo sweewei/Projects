@@ -1,28 +1,11 @@
-智能對話系統/
-├── .env                     # ✅ 環境變數檔案
-├── .env.example            # ✅ 環境變數範例檔案
-├── .gitignore              # ✅ Git 忽略檔案
-├── requirements.txt        # ✅ 依賴清單
-├── main.py                 # ✅ 主程式
-├── README.md              # ✅ 說明文檔
-├── config/
-│   ├── init.py         # ✅ 必須建立
-│   └── settings.py         # ✅ 配置檔案
-├── src/
-│   ├── init.py         # ✅ 必須建立
-│   ├── models/
-│   │   ├── init.py     # ✅ 必須建立
-│   │   └── llm_model.py    # ✅ LLM 模型
-│   ├── services/
-│   │   ├── init.py     # ✅ 必須建立
-│   │   ├── chat_service.py # ✅ 聊天服務
-│   │   └── vector_service.py # ✅ 向量服務
-│   └── utils/
-│       ├── init.py     # ✅ 必須建立
-│       ├── logger.py       # ✅ 日誌工具
-│       └── exceptions.py   # ✅ 異常處理
-├── static/
-│   └── index.html          # ✅ 前端頁面
-└── data/                   # ✅ 資料目錄
-    ├── Mplan.pdf          # ✅ 你的 PDF 檔案
-    └── vector_store/       # ✅ 向量資料庫（自動生成）
+# 智能營養諮詢系統
+## 基於 RAG (Retrieval-Augmented Generation) 架構的智能營養諮詢對話系統，整合了 LLaMA 3.3 70B 模型與 FAISS 向量檢索，提供專業、準確的營養建議。
+
+## 系統特色
+專業營養諮詢: 針對營養學專業知識進行優化 \
+RAG 架構: 結合文檔檢索與大語言模型生成 \
+即時對話: 支援流式打字效果，模擬真人對話 \
+智能 FAQ: 自動顯示常見問題，提升用戶體驗 \
+多語言支援: 自動語言檢測與中文翻譯 \
+安全可靠: 內建醫療免責聲明與安全性檢查 \
+性能評估: 完整的無參考評估系統
